@@ -302,17 +302,6 @@ public class Main extends JFrame implements KeyListener {
 
     private double rad(double deg) { return deg * Math.PI / 180; }
 
-    private Color darken(Color color, int amount) {
-        int newR = color.getRed()-amount;
-        int newG = color.getGreen()-amount;
-        int newB = color.getBlue()-amount;
-        return new Color(
-            newR < 0? 0 : newR,
-            newG < 0? 0 : newG,
-            newB < 0? 0 : newB
-        );
-    }
-
     private Ray Raycast(Vector origin, double direction) { return new Ray(origin, direction, true, objects, Resolution); }
 
     public static void main(String[] args) {
