@@ -33,7 +33,8 @@ public class Object {
         if (type == 0) {
             return angle - 2 * (angle - this.angle);
         } else if (type == 1) {
-            return -angle;
+            double normal = origin.lookAt(point);
+            return angle - 2 * (angle - normal);
         }
         return angle;
     }

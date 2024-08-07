@@ -6,6 +6,8 @@ public class Ray {
     private Color color;
     private double distance2 = 0;
     private boolean success = true;
+    private Object origBounceOff;
+    private Vector origBounceOffPos;
     
     // Ray() { p1 = new Vector(); p2 = new Vector(); direction = 0; }
     // Ray(Vector from, Vector to) { p1 = from; p2 = to; direction = p1.lookAt(p2); }
@@ -20,6 +22,7 @@ public class Ray {
         boolean pointIntersects = false;
         boolean outOfBounds = false;
         int maxLength = 2000;
+        int bouncesRemaining = 5;
         while (!pointIntersects) {
             distance += 5;
             distance2 += 5;
@@ -29,11 +32,21 @@ public class Ray {
                     if (object.pointIntersects(p2)) {
                         pointIntersects = true;
                         color = object.color;
-                        if (object.reflectivity > 0) {
+                        if (object.reflectivity > 0 && bouncesRemaining > 0) {
+                            while (object.pointIntersects(p2.move(0,1,angle))) {
+                                distance--;
+                                distance2--;
+                                p2 = p1.move(0, distance, angle);
+                            }
+                            if (origBounceOff == null) {
+                                origBounceOff = object;
+                                origBounceOffPos = p2;
+                            }
                             pointIntersects = false;
                             angle = object.reflect(p2, angle);
                             p1 = p2;
                             distance = 0;
+                            bouncesRemaining--;
                         }
                         break;
                     }
@@ -71,4 +84,6 @@ public class Ray {
     public Color color() { return color; }
     public double distance() { return distance2; }
     public boolean success() { return success; }
+    public Object origBounceOff() { return origBounceOff; }
+    public Vector origBounceOffPos() { return origBounceOffPos; }
 }

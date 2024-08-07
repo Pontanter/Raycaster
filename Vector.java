@@ -25,6 +25,8 @@ public class Vector {
     public Vector removeAxis(int axis) { return axis == 0? new Vector(0, Y()) : axis == 1? new Vector(X(), 0) : clone(); }
     public Vector normalize() { return this.div(this.magnitude()); }
     public Vector clone() { return new Vector(X(), Y()); }
+    public Vector negate() { return new Vector(-X(), -Y()); }
+    public Vector inverse() { return new Vector(negate().Y(), negate().X()); }
     public Vector move(double X, double Y, double direction) {
         double newX = X * Math.cos(direction) - Y * Math.sin(direction);
         double newY = X * Math.sin(direction) + Y * Math.cos(direction);

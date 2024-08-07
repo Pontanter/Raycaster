@@ -8,6 +8,8 @@ import java.awt.Color;
 import java.awt.Polygon;
 import java.awt.Font;
 import java.awt.AlphaComposite;
+import java.awt.geom.Point2D;
+import java.awt.LinearGradientPaint;
 import java.awt.event.KeyListener;
 import java.awt.event.KeyEvent;
 
@@ -47,6 +49,11 @@ public class Main extends JFrame implements KeyListener {
         new Object(
             new Vector(Resolution.X()-51, Resolution.Y()/2-150),
             new Vector(50, 150),
+            new Color(248, 172, 0)
+        ),
+        new Object(
+            new Vector(Resolution.X()/3+25, Resolution.Y()/2),
+            new Vector(50, 200),
             new Color(248, 172, 0)
         ),
         new Object(
@@ -90,6 +97,10 @@ public class Main extends JFrame implements KeyListener {
     Main() {
         objects[1].reflectivity = .7;
 
+        objects[2].reflectivity = .7;
+
+        objects[3].reflectivity = .1;
+
         panel = new JPanel() {
             @Override
             public void paint(Graphics g) {
@@ -119,15 +130,31 @@ public class Main extends JFrame implements KeyListener {
                             int y = (int)((Height+add2)/(distance/150)-(Off+mul+add+add3)) + Resolution.Yi()/2 - height/2;
                             Color color = ray.color();
                             float alpha = 1 - ((float)distance/Resolution.Xf());
+                            Point2D start = new Point2D.Float(0, 0);
+                            Point2D end = new Point2D.Float(0, Resolution.Yf());
+                            float point = (float)(y+height/2)/Resolution.Yf();
+                            float[] dist = {0.0f, point < .001f? .001f : point > .999f? .999f : point, 1.0f};
+                            Color[] colors = {Color.BLACK, Color.BLACK, new Color(64, 128, 32)};
                             g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1));
-                            g2D.setColor(new Color(64, 128, 32));
+                            try { g2D.setPaint(new LinearGradientPaint(start, end, dist, colors)); } catch (Exception e) {}
                             g2D.fillRect(x, y+height/2, (int) Math.round(width), Resolution.Yi()*5);
                             if (ray.success()) {
                                 g2D.setColor(Color.BLACK);
+                                g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1));
                                 g2D.fillRect(x, y, (int) Math.round(width), height);
                                 g2D.setColor(color == null? new Color(172, 172, 172) : color);
                                 g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha > 1? 1 : alpha < 0? 0 : alpha));
                                 g2D.fillRect(x, y, (int) Math.round(width), height);
+                            }
+                            if (ray.origBounceOff() != null) {
+                                double distance2 = Vector.distance(position, ray.origBounceOffPos());
+                                int height2 = (int) (Resolution.Y()/distance2*200);
+                                int y2 = (int)((Height+add2)/(distance2/150)-(Off+mul+add+add3)) + Resolution.Yi()/2 - height2/2;
+                                float alpha2 = (1 - ((float)distance2/Resolution.Xf())) - (float) ray.origBounceOff().reflectivity;
+                                alpha2 = alpha2 > 1? 1 : alpha2 < 0? 0 : alpha2;
+                                g2D.setColor(ray.origBounceOff().color);
+                                g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha2));
+                                g2D.fillRect(x, y2, (int) Math.round(width), height2);
                             }
                         }
                     }
@@ -247,8 +274,11 @@ public class Main extends JFrame implements KeyListener {
             needOff = needOff > 300? 300 : needOff < -300? -300 : needOff;
             Off = Off + (needOff - Off) * .15;
             Object obj = objects[0];
+            Object obj2 = objects[2];
             objects[0].angle = rad(frame*5);
-            objects[0].origin = new Vector(Resolution.X()/3+25, Resolution.Y()/2).move(-obj.size.X()/2, -obj.size.Y()/2, obj.angle);
+            objects[0].origin = new Vector(Resolution.X()/3+25, Resolution.Y()/2).move(obj.size.negate().X()/2, obj.size.negate().Y()/2, obj.angle);
+            objects[2].angle = rad(frame*-5);
+            objects[2].origin = new Vector(Resolution.X()/1.5, Resolution.Y()/2+25).move(obj2.size.negate().X()/2, obj2.size.negate().Y()/2, obj2.angle);
             panel.repaint();
             c_fps++;
             frame++;
@@ -271,6 +301,17 @@ public class Main extends JFrame implements KeyListener {
     }
 
     private double rad(double deg) { return deg * Math.PI / 180; }
+
+    private Color darken(Color color, int amount) {
+        int newR = color.getRed()-amount;
+        int newG = color.getGreen()-amount;
+        int newB = color.getBlue()-amount;
+        return new Color(
+            newR < 0? 0 : newR,
+            newG < 0? 0 : newG,
+            newB < 0? 0 : newB
+        );
+    }
 
     private Ray Raycast(Vector origin, double direction) { return new Ray(origin, direction, true, objects, Resolution); }
 
@@ -324,6 +365,7 @@ public class Main extends JFrame implements KeyListener {
                 Direction = 0;
                 jumps = 1;
                 frame = 0;
+                boostCool = 0;
                 break;
             case KeyEvent.VK_SHIFT:
                 if (boostCool > frame)
