@@ -3,7 +3,8 @@
 
 *Controls*
  * **WASD & Arrows for motion**
- * **Space - jump**
+ * **Space - Jump**
+ * **Shift - Dash**
  * **F1 - Toggle debug mode**
  * **F2 - Toggle view mode**
 
