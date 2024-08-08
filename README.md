@@ -18,3 +18,8 @@
  - Camera shake (footsteps and such)
  - Mirrors
  - Lens correction
+
+## Compilation;
+### You can compile and run this in 2 ways
+ **A) Regular Java compilation (Run Main)**
+ **B) .\run.sh file (Linux OR git bash)**
