@@ -18,51 +18,62 @@ public class Main extends JFrame implements KeyListener {
 
     private int c_fps;
     private int FPS;
-
-    private Vector Resolution = new Vector(1920, 1080); /* 1360, 768 */
     
-    private int FOV = 90;
-    private int Detail = 6; /* if this num is not divisible by 2, it does not work, I tried fixing it but to no avail. */
-
-    private int Direction = 90;
-    private Vector position = Resolution.div(2);
-    private int Size = 35;
-    private double Speed = 7.5;
-    private int turnSpeed = 3;
+    private double Direction = 90;
     private double Height = -150;
     private double yVel = 0;
     private double Off = 0;
     private double needOff = 0;
     private int jumps = 1;
+    private int dJumpsDone = 0;
     private double turnYawVel = 0;
-    private int frame;
-    private int boostCool = 0;
+    private double frame;
+    private double boostCool = 0;
     private double Delta = 2;
+    private double globTimeMul = 1;
+    private double desTimeMul = 1;
     private Vector velocity = new Vector();
+    
+    /* VV CUSTOMIZABLE VV */
+    
+    /* Player */
+    private int Size = 35; /* Character display size on map (has no effect) */
+    private double Speed = 7.5; /* Character move speed */
+    private int turnSpeed = 3; /* Character turn speed, shocking am I right? */
+    private int FOV = 180; /* Field of View (degrees) */
+    
+    /* Raycaster */
+    private Vector Resolution = new Vector(1920, 1080); /* Resolution of the display (doesn't do anything anymore, as fullscreen is now enforced) */
+    private int Detail = 6; /* Detail level (MUST BE EVEN, I REALLY DON'T KNOW WHY) */
+    private boolean Reflections = true; /* Wether or not mirrors should reflect (Turn off if you're experiencing performance issues) */
+    
+    /* ^^ CUSTOMIZABLE ^^ */
 
+    private Vector position = Resolution.div(2);
+    
     private Object[] objects = {
         new Object(
             new Vector(Resolution.X()/3+25, Resolution.Y()/2),
             new Vector(200, 50),
             new Color(248, 172, 0)
-        ),
-        new Object(
-            new Vector(Resolution.X()-51, Resolution.Y()/2-150),
-            new Vector(50, 150),
-            new Color(248, 172, 0)
-        ),
-        new Object(
-            new Vector(Resolution.X()/3+25, Resolution.Y()/2),
-            new Vector(50, 200),
-            new Color(248, 172, 0)
-        ),
-        new Object(
-            new Vector(0, 0),
-            new Vector(50, Resolution.Y()),
-            new Color(172, 248, 172)
-        ),
-        new Object(
-            new Vector(Resolution.X()-50, 0),
+            ),
+            new Object(
+                new Vector(Resolution.X()-51, Resolution.Y()/2-150),
+                new Vector(50, 150),
+                new Color(248, 172, 0)
+                ),
+                new Object(
+                    new Vector(Resolution.X()/3+25, Resolution.Y()/2),
+                    new Vector(50, 200),
+                    new Color(248, 172, 0)
+                    ),
+                    new Object(
+                        new Vector(0, 0),
+                        new Vector(50, Resolution.Y()),
+                        new Color(172, 248, 172)
+                        ),
+                        new Object(
+                            new Vector(Resolution.X()-50, 0),
             new Vector(50, Resolution.Y()),
             new Color(172, 248, 172)
         ),
@@ -101,6 +112,9 @@ public class Main extends JFrame implements KeyListener {
 
         objects[3].reflectivity = .1;
 
+        if (FOV > 90)
+            System.out.println("WARNING: Lens-correction disabled due to FOV > 90.");
+
         panel = new JPanel() {
             @Override
             public void paint(Graphics g) {
@@ -115,14 +129,14 @@ public class Main extends JFrame implements KeyListener {
                     for (Ray ray : rays) {
                         i++;
                         if (ray != null) {
-                            double distance = ray.distance();
+                            double distance = ray.distance()*(FOV > 90? 1 : Math.cos(rad(Direction)-ray.direction()));
                             int height = (int) (Resolution.Y()/distance*200);
                             double width = Resolution.X()/(double)(FOV*Detail);
                             int x = (int) (i*width);
-                            int mul = Height < -145? (int) (Math.sin((double)frame/5)*(velocity.magnitude()/2)) : 0;
+                            int mul = Height < -145? (int) (Math.sin(frame/5)*(velocity.magnitude()/2)) : 0;
                             double distX = (((double)x - Resolution.X()/2) / 6.0)/64;
-                            int add = (int) (Math.sin((double)frame/(Height < -145? 2.5 : 5))*(Height < -145? velocity.magnitude()/4 : (Height+150)/15)*distX);
-                            int add2 = Height < -145? (int) (Math.sin((double)frame/30)*50) : 0;
+                            int add = (int) (Math.sin(frame/(Height < -145? 2.5 : 5))*(Height < -145? velocity.magnitude()/4 : (Height+150)/15)*distX);
+                            int add2 = Height < -145? (int) (Math.sin(frame/30)*50) : 0;
                             Vector tiltVec = velocity.angle(rad(-Direction)).removeAxis(1);
                             double tiltMag = tiltVec.magnitude();
                             double tilt = tiltVec.X() > 0? -tiltMag : tiltMag;
@@ -146,8 +160,21 @@ public class Main extends JFrame implements KeyListener {
                                 g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha > 1? 1 : alpha < 0? 0 : alpha));
                                 g2D.fillRect(x, y, (int) Math.round(width), height);
                             }
+                            if (ray.foundPlayerPos() != null) {
+                                double distance2 = ray.dist3ToFoundPlayer()*Math.cos(rad(Direction)-ray.direction());
+                                int height2 = (int) (Resolution.Y()/distance2*100);
+                                int y2 = (int)(200/(distance2/150)-(Off+add+add3)) + Resolution.Yi()/2 - height2/2;
+                                float alpha2 = 1 - ((float)distance2/Resolution.Xf());
+                                alpha2 = alpha2 > 1? 1 : alpha2 < 0? 0 : alpha2;
+                                g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1));
+                                g2D.setColor(Color.BLACK);
+                                g2D.fillRect(x, y2, (int) Math.round(width), height2);
+                                g2D.setColor(Color.WHITE);
+                                g2D.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha2));
+                                g2D.fillRect(x, y2, (int) Math.round(width), height2);
+                            }
                             if (ray.origBounceOff() != null) {
-                                double distance2 = Vector.distance(position, ray.origBounceOffPos());
+                                double distance2 = Vector.distance(position, ray.origBounceOffPos())*Math.cos(rad(Direction)-ray.direction());
                                 int height2 = (int) (Resolution.Y()/distance2*200);
                                 int y2 = (int)((Height+add2)/(distance2/150)-(Off+mul+add+add3)) + Resolution.Yi()/2 - height2/2;
                                 float alpha2 = (1 - ((float)distance2/Resolution.Xf())) - (float) ray.origBounceOff().reflectivity;
@@ -210,14 +237,15 @@ public class Main extends JFrame implements KeyListener {
                     g2D.drawString("Detail: " + Detail, 20, 300);
                     g2D.drawString("YVel: " + yVel, 20, 320);
                     g2D.drawString("Delta: " + Delta, 20, 340);
-                    g2D.drawString("Loaded Rays: " + rays.length, 20, 360);
-                    g2D.drawString("Rays;", 20, 380);
+                    g2D.drawString("Time Multiplier: " + globTimeMul, 20, 360);
+                    g2D.drawString("Loaded Rays: " + rays.length, 20, 380);
+                    g2D.drawString("Rays;", 20, 400);
                     for (int i = 0; i < rays.length; i++) {
                         Ray ray = rays[i];
                         String display = "NULL";
                         if (ray != null)
                             display = ray.origin() + " to " + ray.collision();
-                        g2D.drawString("#" + i + ": " + display, 40, 400 + i*20);
+                        g2D.drawString("#" + i + ": " + display, 40, 420 + i*20);
                     }
                 }
                 g2D.dispose();
@@ -240,53 +268,64 @@ public class Main extends JFrame implements KeyListener {
         new Timer(1000/60, e -> {
             for (int i = 0; i < rays.length; i++) {
                 double angle = rad((double)Direction - FOV/2 + (double)i/Detail);
-                rays[i] = Raycast(position, angle);
+                rays[i] = Raycast(position, angle, Reflections);
             }
-            turnYawVel = (turnYawVel + (double) (leftDown? -turnSpeed : rightDown? turnSpeed : 0)) * .75;
-            Direction += Math.round(turnYawVel);
+            globTimeMul = globTimeMul + (desTimeMul - globTimeMul) * .1;
+            turnYawVel = (turnYawVel + ((double) (leftDown? -turnSpeed : rightDown? turnSpeed : 0) * globTimeMul)) * .75;
+            Direction += turnYawVel;
             Direction %= 360;
             if (Direction < 0) Direction += 360;
-            velocity = velocity.move(dDown? -Speed : aDown? Speed : 0, sDown? -Speed : wDown? Speed : 0, rad(Direction)).mul(.75);
-            position = position.add(velocity.removeAxis(0));
+            velocity = velocity.move((dDown? -Speed : aDown? Speed : 0)*globTimeMul, (sDown? -Speed : wDown? Speed : 0)*globTimeMul, rad(Direction)).mul(.75);
+            position = position.add(velocity.removeAxis(0).mul(globTimeMul));
             boolean didAllowWallJump = false;
             if (pointInWall(position)) {
                 position = position.sub(velocity.removeAxis(0));
-                if (!didAllowWallJump) {
+                if (!didAllowWallJump && dJumpsDone < 1) {
                     jumps++;
+                    dJumpsDone++;
                     didAllowWallJump = true;
                 }
             }
             position = position.add(velocity.removeAxis(1));
             if (pointInWall(position)) {
                 position = position.sub(velocity.removeAxis(1));
-                if (!didAllowWallJump) {
+                if (!didAllowWallJump && dJumpsDone < 1) {
                     jumps++;
+                    dJumpsDone++;
                     didAllowWallJump = true;
                 }
             }
-            Height += yVel;
+            Height += yVel*globTimeMul;
             if (Height < -150) {
-                yVel *= -.45;
+                if (yVel < -15) /* likely a fall */
+                    Height = -150 + (yVel*2.5);
+                yVel = 0;
+                Height = Height + (-150 - Height) * (.1*globTimeMul);
+                dJumpsDone = 0;
                 jumps = 1;
             } else if (Height > -150)
-                yVel -= 5;
+                yVel -= 5*globTimeMul;
             needOff += upDown? -50 : downDown? 50 : 0;
             needOff = needOff > 300? 300 : needOff < -300? -300 : needOff;
             Off = Off + (needOff - Off) * .15;
             Object obj = objects[0];
             Object obj2 = objects[2];
-            objects[0].angle = rad(frame*5);
-            objects[0].origin = new Vector(Resolution.X()/3+25, Resolution.Y()/2).move(obj.size.negate().X()/2, obj.size.negate().Y()/2, obj.angle);
-            objects[2].angle = rad(frame*-5);
-            objects[2].origin = new Vector(Resolution.X()/1.5, Resolution.Y()/2+25).move(obj2.size.negate().X()/2, obj2.size.negate().Y()/2, obj2.angle);
+            if (obj != null) {
+                objects[0].angle = rad(frame*5);
+                objects[0].origin = new Vector(Resolution.X()/3+25, Resolution.Y()/2).move(obj.size.negate().X()/2, obj.size.negate().Y()/2, obj.angle);
+            }
+            if (obj2 != null) {
+                objects[2].angle = rad(frame*-5);
+                objects[2].origin = new Vector(Resolution.X()/1.5, Resolution.Y()/2+25).move(obj2.size.negate().X()/2, obj2.size.negate().Y()/2, obj2.angle);
+            }
             panel.repaint();
             c_fps++;
-            frame++;
+            frame += globTimeMul;
         }).start();
 
         new Timer(1000, e -> {
             FPS = c_fps;
-            Delta = 60.0/(double)FPS;
+            Delta = 1.0/(double)FPS;
             c_fps = 0;
             setTitle("Raycasting - " + FPS + " FPS");
         }).start();
@@ -302,7 +341,7 @@ public class Main extends JFrame implements KeyListener {
 
     private double rad(double deg) { return deg * Math.PI / 180; }
 
-    private Ray Raycast(Vector origin, double direction) { return new Ray(origin, direction, true, objects, Resolution); }
+    private Ray Raycast(Vector origin, double direction, boolean reflect) { return new Ray(origin, direction, true, objects, Resolution, position, reflect); }
 
     public static void main(String[] args) {
         new Main();
@@ -338,6 +377,29 @@ public class Main extends JFrame implements KeyListener {
             case KeyEvent.VK_RIGHT:
                 rightDown = true;
                 break;
+            case KeyEvent.VK_G:
+                desTimeMul = desTimeMul == 1? .25 : 1;
+                break;
+            case KeyEvent.VK_F:
+                yVel = yVel < 0? 150 : yVel + 150;
+                break;
+            case KeyEvent.VK_V:
+                yVel = yVel > 0? -150 : yVel - 150;
+                break;
+            case KeyEvent.VK_T:
+                Ray ray = Raycast(position, rad(Direction), false);
+                if (ray.success() && ray.hit() != null) {
+                    /* get index of ray.hit() in objects */
+                    for (int i = 0; i < objects.length; i++) {
+                        if (objects[i] == null) continue;
+                        boolean equal = ray.hit().equals(objects[i]);
+                        if (equal) {
+                            objects[i] = null;
+                            break;
+                        }
+                    }
+                }
+                break;
             case KeyEvent.VK_SPACE:
                 if (jumps < 1)
                     break;
@@ -355,12 +417,20 @@ public class Main extends JFrame implements KeyListener {
                 jumps = 1;
                 frame = 0;
                 boostCool = 0;
+                dJumpsDone = 0;
+                desTimeMul = 1;
+                globTimeMul = 1;
                 break;
             case KeyEvent.VK_SHIFT:
                 if (boostCool > frame)
                     break;
-                velocity = velocity.add(new Vector(0, 145).angle(rad(Direction)));
-                boostCool = frame + 30;
+                if (velocity.magnitude() < 5)
+                    velocity = velocity.add(new Vector(0, 145).angle(rad(Direction)));
+                else
+                    velocity = velocity.normalize().mul(145);
+                if (Height <= -145)
+                    Height = -600; /* sorta like a slide */
+                boostCool = (int) frame + 30;
                 break;
             case KeyEvent.VK_F1:
                 Debug = !Debug;

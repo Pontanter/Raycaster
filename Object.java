@@ -16,6 +16,10 @@ public class Object {
         this.color = color;
     }
 
+    public boolean equals(Object other) {
+        return (origin.equals(other.origin) && size.equals(other.size) && color.equals(other.color) && angle == other.angle);
+    }
+
     public boolean pointIntersects(Vector point) {
         if (type == 0) {
             Vector translatedPoint = point.sub(origin).angle(-angle);
@@ -30,12 +34,10 @@ public class Object {
     }
     
     public double reflect(Vector point, double angle) {
-        if (type == 0) {
+        if (type == 0)
             return angle - 2 * (angle - this.angle);
-        } else if (type == 1) {
-            double normal = origin.lookAt(point);
-            return angle - 2 * (angle - normal);
-        }
+        else if (type == 1)
+            return angle - 2 * (angle - origin.lookAt(point));
         return angle;
     }
 

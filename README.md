@@ -7,8 +7,14 @@
  * **Shift - Dash**
  * **F1 - Toggle debug mode**
  * **F2 - Toggle view mode**
+ * **T - Destroy looking-at Object**
+ * **G - Toggle slowed time**
+ * **R - Reset world**
+ * **F - Fling upwards**
+ * **V - Fling downwards**
 
 *Minor features include;*
  - Wall jumping
  - Camera shake (footsteps and such)
  - Mirrors
+ - Lens correction

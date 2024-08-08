@@ -23,7 +23,7 @@ public class Vector {
     public double lookAt(Vector other) { return Math.atan2(other.Y() - Y(), other.X() - X()); }
     public double magnitude() { return Math.sqrt(X() * X() + Y() * Y()); }
     public Vector removeAxis(int axis) { return axis == 0? new Vector(0, Y()) : axis == 1? new Vector(X(), 0) : clone(); }
-    public Vector normalize() { return this.div(this.magnitude()); }
+    public Vector normalize() { return div(magnitude()); }
     public Vector clone() { return new Vector(X(), Y()); }
     public Vector negate() { return new Vector(-X(), -Y()); }
     public Vector inverse() { return new Vector(negate().Y(), negate().X()); }
