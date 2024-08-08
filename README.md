@@ -1,7 +1,7 @@
 # Java Raycaster
 ### A simple Doom-style Raycaster made using Java (swing)
 
-*Controls*
+*Controls;*
  * **WASD & Arrows for motion**
  * **Space - Jump**
  * **Shift - Dash**
@@ -21,5 +21,5 @@
 
 ## Compilation;
 ### You can compile and run this in 2 ways
- **A) Regular Java compilation (Run Main)**
- **B) .\run.sh file (Linux OR git bash)**
+ * **A) Regular Java compilation (Run Main)**
+ * **B) .\run.sh file (Linux OR git bash)**
